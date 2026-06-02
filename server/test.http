@@ -1,0 +1,40 @@
+@PREFIX = http://localhost:3001/api
+## Authentication
+### LOGIN User (Correct)
+POST {{PREFIX}}/sessions HTTP/1.1
+Content-Type: application/json
+
+{
+    "username":"DerKevin1",
+    "password":"123"
+}
+### LOGIN User (Wrong Username)
+POST {{PREFIX}}/sessions HTTP/1.1
+Content-Type: application/json
+
+{
+    "username":"DerKevin0",
+    "password":"123"
+}
+
+### LOGIN User (Wrong Password)
+POST {{PREFIX}}/sessions HTTP/1.1
+Content-Type: application/json
+
+{
+    "username":"DerKevin1",
+    "password":"124"
+}
+
+### GET User
+GET {{PREFIX}}/sessions/current HTTP/1.1
+
+### DELETE User (from Session, logout)
+DELETE {{PREFIX}}/sessions/current  HTTP/1.1
+
+## Gameplay
+## Setup
+
+## During Game
+
+## Game End

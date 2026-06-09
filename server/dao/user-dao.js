@@ -45,8 +45,25 @@ function UserDAO() {
    * Sets Highscore for a user.
    */
   this.setHighscore = (username, score) => {
-    //Sets the users highscore
+    return new Promise((resolve, reject) => {
+      db("users").run("UPDATE users SET highscore = ? WHERE username = ?",
+        [score,username],
+        function (err){
+          if(err){
+            reject(err)
+          }
+          else if (this.changes !== 1){
+            resolve({ error: `No user with username: ${username}` })
+          }
+          else{
+            resolve(score)
+          }
+        }
+      )
+    })
   };
+
+
 }
 
 export default UserDAO;

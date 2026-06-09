@@ -5,10 +5,12 @@ import passport from "passport";
 import LocalStrategy from "passport-local";
 import session from "express-session";
 import UserDAO from "./dao/user-dao.js";
+import EventDAO from "./dao/event-dao.js";
 
 // init express
 const app = new express();
 const port = 3001;
+const prefix = "/api";
 
 app.use(
   cors({
@@ -31,6 +33,7 @@ app.use(passport.authenticate("session"));
 
 //Setup dataobjects
 const userDao = new UserDAO();
+const eventDao = new EventDAO();
 
 //__________AUTHENTICATION___________//
 passport.use(
@@ -44,14 +47,18 @@ passport.use(
 /**
  * Execute passports local strategy to authenticate the user and save his log-in in the session storage.
  */
-app.post("/api/sessions", passport.authenticate("local"), function (req, res) {
-  return res.status(201).json(req.user);
-});
+app.post(
+  `${prefix}/sessions`,
+  passport.authenticate("local"),
+  function (req, res) {
+    return res.status(201).json(req.user);
+  },
+);
 
 /**
  * Get the currently logged in user from the session storage.
  */
-app.get("/api/sessions/current", (req, res) => {
+app.get(`${prefix}/sessions/current`, (req, res) => {
   if (req.isAuthenticated()) {
     res.json(req.user);
   } else {
@@ -62,17 +69,21 @@ app.get("/api/sessions/current", (req, res) => {
 /**
  * Logout the currently logged in user.
  */
-app.delete("/api/sessions/current", (req, res) => {
+app.delete(`${prefix}/sessions/current`, (req, res) => {
   req.logOut(() => {
     res.end();
   });
 });
 
 /**
- * Serialize user for session storage. 
+ * Serialize user for session storage.
  */
 passport.serializeUser(function (user, cb) {
-  return cb(null, { id: user.id, username: user.username, highscore: user.highscore });
+  return cb(null, {
+    id: user.id,
+    username: user.username,
+    highscore: user.highscore,
+  });
 });
 
 passport.deserializeUser(function (user, cb) {
@@ -86,6 +97,7 @@ const isLoggedIn = (req, res, next) => {
   if (req.isAuthenticated()) return next();
   return res.status(400).json({ message: "Request is not authenticated." });
 };
+
 //Databases
 //Stations: List of Station Names and positions (potentially?)
 //Lines-Stations: Contains List of Line Names associated with Stations
@@ -97,13 +109,45 @@ const isLoggedIn = (req, res, next) => {
 //GET All lines
 //GET all Stations
 //GET List of Station Connections
-//GET Random Starting and destination station (min distance 3)
 
 //________During_Game________//
-//GET Random event (from -4 to +4 coins)
+/**
+ * Gets Random event with text (description) and a coin modificator that adds or subtracts up to 4 coins from the player.
+ */
+app.get(`${prefix}/event`, async (req, res) => {
+  try {
+    const result = await eventDao.getRandomEvent();
+    if (result.error) {
+      res.status(404).json(result);
+    } else {
+      res.status(200).json({ event: result });
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+//GET Random Starting and destination station (min distance 3 (4 stops))
 
 //________Game_Ended________//
-//POST Player Highscore
+/**
+ * Sets the currently logged in users highscore.
+ */
+app.post(`${prefix}/highscore`, isLoggedIn, async (req, res) => {
+  try {
+    const result = await userDao.setHighscore(
+      req.user.username,
+      req.body.highscore,
+    );
+    if (result.error) {
+      res.status(404).json(result);
+    } else {
+      res.status(200).json({ "new highscore": result });
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 //activate the server
 app.listen(port, () => {

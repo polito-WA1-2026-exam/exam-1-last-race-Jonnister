@@ -34,8 +34,16 @@ DELETE {{PREFIX}}/sessions/current  HTTP/1.1
 
 # Gameplay
 ## Setup
+### GET Lines and the respective station-station connections the line covers.
+GET {{PREFIX}}/lines HTTP/1.1
+
+### GET Stations
+GET {{PREFIX}}/stations HTTP/1.1
 
 ## During Game
+### GET random starting and destination station with route consisting at least of 3 segments
+GET {{PREFIX}}/randstartdest HTTP/1.1
+
 ### GET random Event
 GET {{PREFIX}}/event HTTP/1.1
 

@@ -6,6 +6,7 @@ import LocalStrategy from "passport-local";
 import session from "express-session";
 import UserDAO from "./dao/user-dao.js";
 import EventDAO from "./dao/event-dao.js";
+import MetroDAO from "./dao/metro-dao.js";
 
 // init express
 const app = new express();
@@ -31,9 +32,16 @@ app.use(express.json());
 
 app.use(passport.authenticate("session"));
 
+//Databases
+//Stations: List of Station Names and positions
+//Lines-Stations: Contains List of Line Names associated with two stations each (e.g. Line 1, Palace, Center)
+//Users username, email, password, salt, score
+//Events: Event ID (maybe not necessary), Event description, event coin modificator (from -4 to +4)
+
 //Setup dataobjects
 const userDao = new UserDAO();
 const eventDao = new EventDAO();
+const metroDAO = new MetroDAO();
 
 //__________AUTHENTICATION___________//
 passport.use(
@@ -98,23 +106,39 @@ const isLoggedIn = (req, res, next) => {
   return res.status(400).json({ message: "Request is not authenticated." });
 };
 
-//Databases
-//Stations: List of Station Names and positions (potentially?)
-//Lines-Stations: Contains List of Line Names associated with Stations
-//Users username, email, password, salt, score
-//Events: Event ID (maybe not necessary), Event description, event coin modificator (from -4 to +4)
-
 //________Gameplay________//
 //________Setup__________//
-//GET All lines
-//GET all Stations
-//GET List of Station Connections
+/**
+ * Gets all lines and the station pairs associated with each line. 
+*/
+app.get(`${prefix}/lines/`, isLoggedIn, async (req,res) => {
+  try{
+  const result = await metroDAO.getLines();
+  res.status(200).json(result);
+  }
+  catch(err){
+    res.status(500).json({error: err.message})
+  }
+})
+
+/**
+ * Gets all stations (names) and their positions (x,y).
+ */
+app.get(`${prefix}/stations/`, isLoggedIn, async (req,res) => {
+  try{
+  const result = await metroDAO.getStations();
+  res.status(200).json(result);
+  }
+  catch(err){
+    res.status(500).json({error: err.message})
+  }
+})
 
 //________During_Game________//
 /**
  * Gets Random event with text (description) and a coin modificator that adds or subtracts up to 4 coins from the player.
  */
-app.get(`${prefix}/event`, async (req, res) => {
+app.get(`${prefix}/event`, isLoggedIn, async (req, res) => {
   try {
     const result = await eventDao.getRandomEvent();
     if (result.error) {
@@ -127,7 +151,21 @@ app.get(`${prefix}/event`, async (req, res) => {
   }
 });
 
-//GET Random Starting and destination station (min distance 3 (4 stops))
+/**
+ * Get random starting and destination stations (min distance 3 (4 stops))
+ */
+app.get(`${prefix}/randstartdest`, isLoggedIn, async (req, res) => {
+  try {
+    const result = await metroDAO.getStartAndDest();
+    if (result.error) {
+      res.status(404).json(result);
+    } else {
+      res.status(200).json(result);
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 //________Game_Ended________//
 /**

@@ -55,13 +55,23 @@ passport.use(
 /**
  * Execute passports local strategy to authenticate the user and save his log-in in the session storage.
  */
-app.post(
-  `${prefix}/sessions`,
-  passport.authenticate("local"),
-  function (req, res) {
-    return res.status(201).json(req.user);
-  },
-);
+app.post(`${prefix}/sessions`, function (req, res, next) {
+  passport.authenticate("local", (err, user, errmsg) => {
+    if (err) {
+      return next(err);
+    }
+    if (!user) {
+      return res.status(401).json({ error: errmsg });
+    }
+    //Only proceed with login and send positive response if user exists and password correct.
+    req.login(user, (err) => {
+      if (err) {
+        return next(error);
+      }
+      return res.json(req.user);
+    });
+  })(req, res, next);
+})
 
 /**
  * Get the currently logged in user from the session storage.
@@ -109,30 +119,28 @@ const isLoggedIn = (req, res, next) => {
 //________Gameplay________//
 //________Setup__________//
 /**
- * Gets all lines and the station pairs associated with each line. 
-*/
-app.get(`${prefix}/lines/`, isLoggedIn, async (req,res) => {
-  try{
-  const result = await metroDAO.getLines();
-  res.status(200).json(result);
+ * Gets all lines and the station pairs associated with each line.
+ */
+app.get(`${prefix}/lines/`, isLoggedIn, async (req, res) => {
+  try {
+    const result = await metroDAO.getLines();
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  catch(err){
-    res.status(500).json({error: err.message})
-  }
-})
+});
 
 /**
  * Gets all stations (names) and their positions (x,y).
  */
-app.get(`${prefix}/stations/`, isLoggedIn, async (req,res) => {
-  try{
-  const result = await metroDAO.getStations();
-  res.status(200).json(result);
+app.get(`${prefix}/stations/`, isLoggedIn, async (req, res) => {
+  try {
+    const result = await metroDAO.getStations();
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  catch(err){
-    res.status(500).json({error: err.message})
-  }
-})
+});
 
 //________During_Game________//
 /**

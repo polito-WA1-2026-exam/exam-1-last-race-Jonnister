@@ -1,0 +1,1 @@
+// General Component for popups, maybe with attributes for buttons (start, submit/cancel) and text?

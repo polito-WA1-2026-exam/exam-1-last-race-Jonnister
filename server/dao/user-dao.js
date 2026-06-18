@@ -14,7 +14,7 @@ function UserDAO() {
           if (err) {
             reject(err);
           } else if (row === undefined) {
-            resolve({ error: `No user with username: ${username}` });
+            resolve(false);
           } else {
             const user = {
               id: row.id,

@@ -70,7 +70,6 @@ function MetroDAO() {
     startStation = potentialStartStations[Math.floor(Math.random() * potentialStartStations.length)];
     potentialEndStations = [...potentialStartStations];
     potentialEndStations = getPotentialEndStations(startStation, stationPairs, potentialEndStations);
-    console.log(potentialEndStations)
     // If there are no potential end stations, this is no longer considered a potential starting station
     if(potentialEndStations.length === 0){
         potentialStartStations = potentialStartStations.filter(element => element != startStation);

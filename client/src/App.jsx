@@ -77,8 +77,8 @@ function App() {
 
   return (
     <UserContext.Provider value={user}>
-      <NavigationBar navigate={navigate} setUser={setUser} />
-      <Container style={{ backgroundColor: "red" }}>
+      <NavigationBar setUser={setUser} />
+      <Container style={{ border: "10px", borderColor:"red" }}>
         <Routes>
           <Route index element={<RulesPage />}></Route>
           <Route

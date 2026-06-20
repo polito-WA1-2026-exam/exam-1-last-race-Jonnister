@@ -61,7 +61,7 @@ app.post(`${prefix}/sessions`, function (req, res, next) {
       return next(err);
     }
     if (!user) {
-      return res.status(401).json({ error: errmsg });
+      return res.status(401).json({ message: errmsg });
     }
     //Only proceed with login and send positive response if user exists and password correct.
     req.login(user, (err) => {
@@ -80,7 +80,7 @@ app.get(`${prefix}/sessions/current`, (req, res) => {
   if (req.isAuthenticated()) {
     res.json(req.user);
   } else {
-    res.status(401).json({ error: "Not authenticated." });
+    res.status(401).json({ message: "Not authenticated." });
   }
 });
 
@@ -126,7 +126,7 @@ app.get(`${prefix}/lines/`, isLoggedIn, async (req, res) => {
     const result = await metroDAO.getLines();
     res.status(200).json(result);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -138,7 +138,7 @@ app.get(`${prefix}/stations/`, isLoggedIn, async (req, res) => {
     const result = await metroDAO.getStations();
     res.status(200).json(result);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 });
 

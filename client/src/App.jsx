@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import heroImg from "./assets/hero.png";
 import "./App.css";
 import { redirect, Route, Routes } from "react-router";
-import { Container, Button } from "react-bootstrap";
+import { Container, Button, Row} from "react-bootstrap";
 import NavigationBar from "./components/NavigationBar";
 import LoginPage from "./components/Pages/LoginPage";
 import GamePage from "./components/Pages/GamePage";
@@ -12,6 +12,7 @@ import RulesPage from "./components/Pages/RulesPage";
 import UserContext from "./utility/contexts/UserContext.js";
 import { useNavigate } from "react-router";
 import sendRequest from "./utility/Api.js";
+import InfoToast from "./components/InfoToast";
 
 //Pages
 //Visitor Page/ Rules Explanation
@@ -34,24 +35,7 @@ function App() {
     highscore: undefined,
   });
   const navigate = useNavigate();
-
-  const retrieveUserFromSession = async () => {
-    try {
-      const res = await fetch("http://localhost:3001/api/sessions/current", {
-        method: "GET",
-        credentials: "include",
-      });
-      if (res.ok) {
-        return res.json();
-      } else {
-        throw new Error(
-          "Some HTTP ERROR in logging in user, code=" + res.status,
-        );
-      }
-    } catch (exception) {
-      throw new Error("Network error" + exception);
-    }
-  };
+  const [currentToast, setCurrentToast] = useState();
 
   useEffect(() => {
     sendRequest(
@@ -67,34 +51,43 @@ function App() {
         score: 0,
         highscore: content.highscore,
       }),
-    );
+    ).catch(err => {
+      setCurrentToast({ title:"Warning", text:"Could not retrieve user from session, please login to play", type:"danger"})
+  });
   }, []);
 
   const handleLogin = (id, username, highscore) => {
     setUser({ id: id, username: username, score: 0, highscore });
     navigate("/");
   };
-
   return (
     <UserContext.Provider value={user}>
       <NavigationBar setUser={setUser} />
-      <Container style={{ border: "10px", borderColor:"red" }}>
-        <Routes>
-          <Route index element={<RulesPage />}></Route>
-          <Route
-            path="/login"
-            element={<LoginPage handleLogin={handleLogin} />}
-          />
-          <Route path="/play" element={<GamePage />} />
-          <Route path="/leaderboard" element={<>Here Leaderboard</>} />
-          <Route
-            path="*"
-            element={
-              <>This is not a valid page. Please navigate to a valid page.</>
-            }
-          />
-        </Routes>
+      <Container
+        fluid
+        className="bg-body-primary"
+        data-bs-theme="dark"
+         style={{ padding: "0 200px 0 200px" }}
+      >
+        <Row>
+          <Routes>
+            <Route index element={<RulesPage />}></Route>
+            <Route
+              path="/login"
+              element={<LoginPage handleLogin={handleLogin} setCurrentToast={setCurrentToast} />}
+            />
+            <Route path="/play" element={<GamePage />} />
+            <Route path="/leaderboard" element={<>Here Leaderboard</>} />
+            <Route
+              path="*"
+              element={
+                <>This is not a valid page. Please navigate to a valid page.</>
+              }
+            />
+          </Routes>
+        </Row>
       </Container>
+      <InfoToast toast={currentToast} />
     </UserContext.Provider>
   );
 }

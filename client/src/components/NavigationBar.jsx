@@ -3,7 +3,6 @@ import userContext from "../utility/contexts/UserContext.js";
 import { useContext } from "react";
 import sendRequest from "../utility/Api.js";
 import { useNavigate } from "react-router";
-//TODO Add User logged in features e.g. username displayed, change login button to logout button
 // Navbar, with Title and Login for the User
 function NavigationBar(props) {
   const navigate = useNavigate();
@@ -24,7 +23,8 @@ function NavigationBar(props) {
     <Navbar
       sticky="top"
       className="bg-body-tertiary"
-      style={{ padding: "0px 4px 0px 4px" }}
+      data-bs-theme="dark"
+      style={{ padding: "10px 4px 10px 4px"}}
     >
       <Navbar.Brand>
         <Nav.Link onClick={() => navigate("/")}>

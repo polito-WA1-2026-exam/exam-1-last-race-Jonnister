@@ -31,9 +31,12 @@ export default async function sendRequest(route, method, errorContext, body, res
                 return true;
         }
     } else {
-      throw new Error(res.status + " HTTP ERROR at " + errorContext);
+      const httpAndContextInfo = 404 + " Http error at " +  errorContext;
+      const resolvedResponse = await res.json();
+      const message = resolvedResponse.message?resolvedResponse.message:"";
+      throw new Error( httpAndContextInfo +": " +resolvedResponse.message);
     }
   } catch (exception) {
-    throw new Error("Network error: " + exception);
+    throw new Error(exception.message);
   }
 }

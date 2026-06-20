@@ -3,21 +3,31 @@ import userContext from "../../utility/contexts/UserContext";
 import { useNavigate } from "react-router";
 import Paper, { PointText, Group } from "paper";
 import sendRequest from "../../utility/Api";
-import {Button} from "react-bootstrap"
+import {Button, ListGroupItem, ListGroup, Offcanvas, Badge} from "react-bootstrap"
 
 //Main Page (Shows Game Screen -> first network, then remove network links only stations)
 function GamePage() {
   const navigate = useNavigate();
   const user = useContext(userContext);
+  //Network
   const [lines, setLines] = useState(undefined); //[{name:"H",position_x:1,position_y:2},{name:"T",position_x:1,position_y:2}]
+  const [stationPairs, setStationPairs] = useState([]);
   const [stations, setStations] = useState(undefined);
   const [stationPoints, setStationPoints] = useState([]);
   const [linePaths, setLinePaths] = useState([]);
+  const colors = ["red", "green", "blue", "purple", "yellow", "orange", "pink"];
+  //Gameplay
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
-  const colors = ["red", "green", "blue", "pink", "yellow", "orange", "purple"];
   const [gameActive, setGameActive] = useState(false);
+  const [selectedStationPairs, setSelectedStationPairs] = useState([]);
   const [coins, setCoins] = useState(20);
+  const [isPlanning, setIsPlanning] = useState(false);
+  const [showStartGame, setShowStartGame] = useState(true);
+  const [showEvent, setShowEvent] = useState(false);
+  const [eventText, setEventText] = useState("");
+  const [eventCoins, setEventCoins] = useState(0)
+
 
   //Redirect unauthorized user
   useEffect(() => {
@@ -30,10 +40,21 @@ function GamePage() {
         "getting stations",
         undefined,
         "JSON",
-      ).then((body) => setStations(body));
+      ).then((body) => setStations(body)).catch((err)=>{
+      props.setCurrentToast({title:"Error", text:`${err.message}`, type:"danger"})
+    });
       sendRequest("/lines", "GET", "getting lines", undefined, "JSON").then(
-        (body) => setLines(body),
-      );
+        (body) => {
+          setLines(body);
+          var tempStationPairs = [];
+          for(var i = 0; i<body.length; i++){
+            tempStationPairs = tempStationPairs.concat(body[i].station_pairs);
+          }
+          setStationPairs(tempStationPairs);
+          }
+      ).catch((err)=>{
+      props.setCurrentToast({title:"Error", text:`${err.message}`, type:"danger"})
+    });
     }
   }, []);
 
@@ -63,15 +84,87 @@ function GamePage() {
       endCircle.strokeColor = "red";
       endCircle.strokeWidth = 3;
       endCircle.dashArray = [10, 2];
+    }).catch((err)=>{
+      props.setCurrentToast({title:"Error", text:`${err.message}`, type:"danger"})
     });
   };
 
   const startGame = async () => {
+    setGameActive(true);
     getRandStartAndDest();
-    console.log("You now have 30s to plan a fitting route!");
+    console.log("You now have 90s to plan a fitting route!");
+    setIsPlanning(true);
     linePaths.opacity = 0;
-    setTimeout(()=>console.log("Times up!"),30000)
+    setTimeout(()=>console.log("Times up!"),90000)
   }
+
+  const pathSelection = (evt, pairName) => {
+if(!selectedStationPairs.includes(pairName)){
+  setSelectedStationPairs([...selectedStationPairs, pairName]);
+ evt.target.active = true;
+}
+else{
+  setSelectedStationPairs(selectedStationPairs.filter(stationPair => stationPair !== pairName)); evt.target.active = "true";
+}
+}
+
+const executeSelectedRoute = () => {
+    if(!checkPathValidity()){
+      return false;
+    }
+    //Pass through each segment one at a time highlighting on the map
+    // Then get the random event for that section
+
+}
+
+const getRandomEvent = () => {
+  sendRequest("/event", "GET", "getting random event",undefined, "JSON").then(event => {setEventText(event.text);
+    setEventCoins(event.coinModificator);
+    setShowEvent(true);})
+}
+
+//TODO change to find method.
+const checkPathValidity = () => {
+  //Check if end can be reached, by going in sequence from one station to another
+  if(!selectedStationPairs || selectedStationPairs.length === 0){
+    return false;
+  }
+  var lastStation = "initial";
+  for(var i = 0; i<selectedStationPairs.length; i++){
+    console.log(lastStation)
+    const station1 = selectedStationPairs[i].split("-")[0];
+  const station2 = selectedStationPairs[i].split("-")[1];
+  {
+    if(i === 0 && station1 !== start && station2 !== start){
+      console.log("Does not start from start")
+      return false; //Does not start from start
+    }
+    if(i === selectedStationPairs.length-1 && station1 !== end && station2 !== end){
+      console.log("Does not end at end")
+      return false; // Does not end at end
+    }
+    if(i < selectedStationPairs.length-1 && (station1 === end || station2 === end)){
+      console.log("Route does not end with end")
+      return false; // Route does not end with end
+    }
+    
+    if(lastStation !== "initial"){
+      if(lastStation !== station1 && lastStation !== station2){
+        console.log("Segment not connected to the last segment")
+        return false; //Segment not connected to the last segment
+      }
+      else{
+        lastStation = station1 === lastStation ? station2 : station1;
+      }
+    }
+    else{
+    lastStation = station1 === start ? station2 : station1;
+    }
+  }
+}
+  return true;
+}
+  
 
   //somewhere between 1 to 1200 for x and 10 and 500
   const drawNetwork = () => {
@@ -109,9 +202,10 @@ function GamePage() {
         for (var j = 0; j < lines[i].station_pairs.length; j++) {
           const station1 = lines[i].station_pairs[j].station_1;
           const station2 = lines[i].station_pairs[j].station_2;
-          //const outerPath = new Paper.Path(stationPointsGroup.children[`${lines[i].station_pairs[j].station_1}`].position,stationPointsGroup.children[`${lines[i].station_pairs[j].station_2}`].position);
-          //outerPath.strokeColor = "black";
-          //Path.strokeWidth = 7; //Maybe add this because it looks nice
+          const outerPath = new Paper.Path(stationPointsGroup.children[station1].position,
+            stationPointsGroup.children[station2].position);
+          outerPath.strokeColor = "black";
+          outerPath.strokeWidth = 8; 
           const path = new Paper.Path(
             stationPointsGroup.children[`${station1}`].position,
             stationPointsGroup.children[`${station2}`].position,
@@ -119,6 +213,7 @@ function GamePage() {
           path.strokeColor = colors[i % colors.length];
           path.strokeWidth = 4;
           path.name = `${lines[i].line} from ${station1} to ${station2}`;
+          linePathsGroup.addChild(outerPath);
           linePathsGroup.addChild(path);
         }
       }
@@ -138,26 +233,39 @@ function GamePage() {
     }
   }, [stations]);
   //Network is rendered in the background. In the front there is a popup showing to start the game
-
-  //TODO Highlight starting and destination stations
-  //TODO Show starting destination station in a small window on the top left
   //TODO Show list of stations to choose from on the right hand side
+  //( linePath,i => {return <ListGroupItem key={i}>{linePath.name}</ListGroupItem>}
+  //TODO maybe imrpove station selection further
   return (
     <>
+    <Offcanvas show={isPlanning} placement="end" backdrop={false} style={{margintop: "100px"}}>
+      <Offcanvas.Body style={{margintop: "100px"}}>
+              <>{`From: ${start} to ${end}`}</>
+      {gameActive && stationPairs && <ListGroup>
+        {stationPairs.map(stationPair => {
+          const identifier = stationPair.station_1 + "-" + stationPair.station_2;
+          const index = selectedStationPairs.indexOf(identifier) >= 0? selectedStationPairs.indexOf(identifier) +1: false;
+         return (<ListGroup.Item key={"LGI" + identifier} active={index} onClick={(evt) => pathSelection(evt, identifier)}>{identifier}
+         {index && <Badge bg="primary" pill>
+            {index}
+          </Badge>}
+         </ListGroup.Item>)
+        })} 
+      </ListGroup>}
+      </Offcanvas.Body>
+    </Offcanvas>
     <div style={{
 	position: "absolute",
-   	backgroundColor: "grey",
     width: "25%",
-    height: "95%",
-    marginLeft: "65%",
+    height: "10%",
+    marginLeft: "-7.5%",
     padding: "5px"
 }}>
 <Button onClick={() => {startGame()}}>Start Game</Button>
-      <>{`From: ${start} to ${end}`}</>
+<Button onClick={() => {console.log(checkPathValidity())}}>val</Button>
       </div>
   <canvas ref={canvasRef} id="canvas" resize="true"/>
     </>
   );
 }
-
 export default GamePage;

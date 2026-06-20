@@ -7,8 +7,9 @@ function LoginPage(props) {
   const [password, setPassword] = useState("");
 
   const LoginUser = (username, password) => {
-    if (username.trim() === "") {
-      throw new Error("Please Enter a username"); //TODO display some message to user maybe a toast?
+    try{
+    if (username.trim() === "" ||password.trim() === "") {
+      throw new Error("Please Enter a username and password.");
     }
     sendRequest(
       "/sessions",
@@ -21,8 +22,13 @@ function LoginPage(props) {
       "JSON",
     ).then((user) => {
       props.handleLogin(user.id, user.username, user.highscore);
-    });
-  };
+    }).catch((err)=>{
+      props.setCurrentToast({title:"Error", text:`${err.message}`, type:"danger"})
+    })
+  }
+  catch(err){
+      props.setCurrentToast({title:"Error", text:`${err.message}`, type:"danger"})
+    }};
 
   return (
     <>
@@ -46,7 +52,7 @@ function LoginPage(props) {
           />
         </FormGroup>
         {
-          //TODO: Add some space here between button and form
+          //TODO: Add some space here between button and form; Make prettier in general
         }
         <Button
           className="btn btn-default"

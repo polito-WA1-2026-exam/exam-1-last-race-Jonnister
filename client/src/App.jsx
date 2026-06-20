@@ -76,7 +76,7 @@ function App() {
               path="/login"
               element={<LoginPage handleLogin={handleLogin} setCurrentToast={setCurrentToast} />}
             />
-            <Route path="/play" element={<GamePage />} />
+            <Route path="/play" element={<GamePage setCurrentToast={setCurrentToast} /> } />
             <Route path="/leaderboard" element={<>Here Leaderboard</>} />
             <Route
               path="*"

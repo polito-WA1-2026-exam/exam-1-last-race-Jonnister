@@ -10,9 +10,10 @@ import {
   ListGroup,
   Offcanvas,
   Badge,
+  Modal,
 } from "react-bootstrap";
 
-function GamePage() {
+function GamePage(props) {
   const navigate = useNavigate();
   const user = useContext(userContext);
   //Network
@@ -21,7 +22,7 @@ function GamePage() {
   const [stations, setStations] = useState(undefined); //Format [{name:"H",position_x:1,position_y:2},{name:"T",position_x:1,position_y:2}]
   const [stationPoints, setStationPoints] = useState([]);
   const [linePaths, setLinePaths] = useState([]);
-  const colors = ["red", "green", "blue", "purple", "yellow", "orange", "pink"];
+  const colors = ["red", "lime", "DeepSkyBlue", "yellow", "orange", "purple", "pink", "green", "blue", "indigo","DarkCyan"];
   //Gameplay
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
@@ -33,6 +34,7 @@ function GamePage() {
   const [showEvent, setShowEvent] = useState(false);
   const [eventText, setEventText] = useState("");
   const [eventCoins, setEventCoins] = useState(0);
+  const [showEndScreen, setShowEndScreen] = useState(false);
 
   //Redirect unauthorized user
   useEffect(() => {
@@ -101,45 +103,90 @@ function GamePage() {
   const startGame = async () => {
     setGameActive(true);
     getRandStartAndDest();
-    console.log("You now have 90s to plan a fitting route!");
+    props.setCurrentToast({
+      title: "",
+      text: "You now have 90s to plan a fitting route!",
+      type: "light",
+    });
     setIsPlanning(true);
     linePaths.opacity = 0;
+    //Start game after 90s
     setTimeout(() => console.log("Times up!"), 90000);
   };
 
   const pathSelection = (stationPair) => {
-    const selectedPair = selectedStationPairs.find((item) =>
-      stationPair.station_1 === item.station_1 &&
-        stationPair.station_2 === item.station_2);
+    const selectedPair = selectedStationPairs.find(
+      (item) =>
+        stationPair.station_1 === item.station_1 &&
+        stationPair.station_2 === item.station_2,
+    );
     if (!selectedPair) {
       setSelectedStationPairs([...selectedStationPairs, stationPair]);
     } else {
       setSelectedStationPairs(
-        selectedStationPairs.filter((stationPair) => stationPair !== selectedPair),
+        selectedStationPairs.filter(
+          (stationPair) => stationPair !== selectedPair,
+        ),
       );
     }
   };
 
   const executeSelectedRoute = () => {
     if (!checkPathValidity()) {
-      return false;
+      setCoins(0);
+      return;
     }
+    linePaths.opacity = 1;
     //Pass through each segment one at a time highlighting on the map
+    const playerMarker = new Paper.Path.Circle(
+      stationPoints.children[start].position,
+      17,
+    );
+    playerMarker.strokeColor = "black";
+    playerMarker.strokeWidth = 5;
+    var lastStation = start;
+    for (var i = 0; i < selectedStationPairs.length; i++) {
+      //Has to be renamed else does not work with set timeout
+      const station =
+        selectedStationPairs[i].station_2 === lastStation
+          ? selectedStationPairs[i].station_1
+          : selectedStationPairs[i].station_2;
+      lastStation = station;
+      setTimeout(
+        () => {
+          playerMarker.position = stationPoints.children[station].position;
+          const event = getRandomEvent();
+          if(station === end){
+            setShowEndScreen(true);
+          }
+        },
+        3000 * (i + 1),
+      );
+    }
     // Then get the random event for that section
   };
-
+  /**
+   *
+   */
   const getRandomEvent = () => {
-    sendRequest(
-      "/event",
-      "GET",
-      "getting random event",
-      undefined,
-      "JSON",
-    ).then((event) => {
-      setEventText(event.text);
-      setEventCoins(event.coinModificator);
-      setShowEvent(true);
-    });
+    sendRequest("/event", "GET", "getting random event", undefined, "JSON")
+      .then((body) => {
+        const text = body.event.text;
+        const coinMod = body.event.coinModificator;
+        props.setCurrentToast({
+          title: "Something happenend...",
+          text: `${text} ${coinMod > 0 ? "You gained " + coinMod + "coins " : "You lost " + -coinMod + " coins"}`,
+          type: "Light",
+        });
+        setCoins(coins + coinMod);
+      })
+      .catch((err) => {
+        props.setCurrentToast({
+          title: "Error",
+          text: `${err.message}`,
+          type: "danger",
+        });
+      });
   };
 
   const checkPathValidity = () => {
@@ -224,20 +271,20 @@ function GamePage() {
         for (var j = 0; j < lines[i].station_pairs.length; j++) {
           const station1 = lines[i].station_pairs[j].station_1;
           const station2 = lines[i].station_pairs[j].station_2;
-          const outerPath = new Paper.Path(
-            stationPointsGroup.children[station1].position,
-            stationPointsGroup.children[station2].position,
-          );
-          outerPath.strokeColor = "black";
-          outerPath.strokeWidth = 8;
+                  //  const outerPath = new Paper.Path(
+        //    stationPointsGroup.children[station1].position,
+        //    stationPointsGroup.children[station2].position,
+        //  );
+          //outerPath.strokeColor = "grey";
+          //outerPath.strokeWidth = 8;
           const path = new Paper.Path(
             stationPointsGroup.children[`${station1}`].position,
             stationPointsGroup.children[`${station2}`].position,
           );
           path.strokeColor = colors[i % colors.length];
-          path.strokeWidth = 4;
+          path.strokeWidth = 7;
           path.name = `${lines[i].line} from ${station1} to ${station2}`;
-          linePathsGroup.addChild(outerPath);
+         // linePathsGroup.addChild(outerPath);
           linePathsGroup.addChild(path);
         }
       }
@@ -272,13 +319,14 @@ function GamePage() {
               {stationPairs.map((stationPair) => {
                 const identifier =
                   stationPair.station_1 + "-" + stationPair.station_2;
-                const stationPairInSelected =
-                    selectedStationPairs.find(item => {
-                        return (
-                          stationPair.station_1 === item.station_1 &&
-                          stationPair.station_2 === item.station_2
-                        );
-                      });
+                const stationPairInSelected = selectedStationPairs.find(
+                  (item) => {
+                    return (
+                      stationPair.station_1 === item.station_1 &&
+                      stationPair.station_2 === item.station_2
+                    );
+                  },
+                );
                 const index =
                   selectedStationPairs.indexOf(stationPairInSelected) >= 0
                     ? selectedStationPairs.indexOf(stationPairInSelected) + 1
@@ -287,7 +335,7 @@ function GamePage() {
                   <ListGroup.Item
                     key={"LGI" + identifier}
                     active={index}
-                    onClick={() =>  pathSelection(stationPair)}
+                    onClick={() => pathSelection(stationPair)}
                   >
                     {index && (
                       <Badge bg="primary" pill>
@@ -304,10 +352,11 @@ function GamePage() {
       </Offcanvas>
       <div
         style={{
+          display: "flex",
+          justifyContent:"center",
+          alignItems:"center",
           position: "absolute",
-          width: "25%",
-          height: "10%",
-          marginLeft: "-7.5%",
+          marginTop: "500px",
           padding: "5px",
         }}
       >
@@ -322,12 +371,28 @@ function GamePage() {
         )}
         <Button
           onClick={() => {
-            console.log(checkPathValidity());
+            executeSelectedRoute();
           }}
         >
           val
         </Button>
       </div>
+      {
+        <Modal show={showEndScreen} onHide={() => {}}>
+<Modal.Header closeButton>
+          <Modal.Title>Game end</Modal.Title>
+        </Modal.Header>
+        <Modal.Body> You finished your journey with {coins} in your pocket. Your new Highscore is {user.highscore}.</Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={() => {setShowEndScreen(false)}}>
+            Play again
+          </Button>
+          <Button variant="secondary" onClick={() => {setShowEndScreen(false)}}>
+            Quit
+          </Button>
+        </Modal.Footer>
+        </Modal>
+      }
       <canvas ref={canvasRef} id="canvas" resize="true" />
     </>
   );

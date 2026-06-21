@@ -42,14 +42,15 @@ function GamePage(props) {
   //Gameplay
   const [start, setStart] = useState(""); //starting station name
   const [end, setEnd] = useState(""); //end station name
-  const [startEndGroup, setStartEndGroup] = useState(undefined)
+  const [startEndGroup, setStartEndGroup] = useState(undefined);
   const [selectedStationPairs, setSelectedStationPairs] = useState([]);
   const [coins, setCoins] = useState(20);
   const [endText, setEndText] = useState("");
 
   const [timeIntervalID, setTimeIntervalId] = useState(0);
   const planningTime = 90;
-  const [currentTime, setCurrentTime] = useState(planningTime)
+  const [currentTime, setCurrentTime] = useState(planningTime);
+  const [isTimeUp, setIsTimeUp] = useState(false);
 
   //Basicly game state machine
   const [gameActive, setGameActive] = useState(false);
@@ -109,10 +110,9 @@ function GamePage(props) {
         endCircle.strokeColor = "red";
         endCircle.strokeWidth = 3;
         endCircle.dashArray = [10, 2];
-        const group = new Paper.Group([startCircle,endCircle])
+        const group = new Paper.Group([startCircle, endCircle]);
         setStartEndGroup(group);
-      }
-    )
+      })
       .catch((err) => {
         props.setCurrentToast({
           title: "Error",
@@ -132,26 +132,31 @@ function GamePage(props) {
     });
     setIsPlanning(true);
     linePaths.opacity = 0;
-    var time= planningTime;
+    var time = planningTime;
     //Start game after 90s
-    setTimeIntervalId(setInterval(() => {
-      time = time - 0.1;
-      setCurrentTime(time);
-      if(time <=0){
-        executeSelectedRoute();
-        props.setCurrentToast({
-          title: "Times Up!",
-          text: `Your time ran out!`,
-          type: "warning",
-        });
-        return;
-      }},100))
+    setTimeIntervalId(
+      setInterval(() => {
+        time = time - 0.1;
+        setCurrentTime(time);
+        if (time <= 0) {
+          setIsTimeUp(true);
+          props.setCurrentToast({
+            title: "Times Up!",
+            text: `Your time ran out!`,
+            type: "warning",
+          });
+          return;
+        }
+      }, 100),
+    );
   };
 
   //Unsubscribe interval
   useEffect(() => {
-    return () => {clearInterval(timeIntervalID)}
-  }, [timeIntervalID])
+    return () => {
+      clearInterval(timeIntervalID);
+    };
+  }, [timeIntervalID]);
 
   const pathSelection = (stationPair) => {
     const selectedPair = selectedStationPairs.find(
@@ -171,6 +176,7 @@ function GamePage(props) {
   };
 
   const executeSelectedRoute = () => {
+    setIsTimeUp(false);
     clearInterval(timeIntervalID);
     setIsPlanning(false);
     if (!checkPathValidity()) {
@@ -196,20 +202,25 @@ function GamePage(props) {
       lastStation = station;
       setTimeout(
         () => {
-          playerMarker.position = stationPoints.children[station].position;  
+          playerMarker.position = stationPoints.children[station].position;
           const event = getRandomEvent();
           if (station === end) {
             setEndText("You successfully reached the endstation!");
-            setTimeout(() =>{
-            submitNewUserScore();
-            setShowEndScreen(true);
-            playerMarker.remove()}, 3000);
+            setTimeout(() => {
+              submitNewUserScore();
+              setShowEndScreen(true);
+              playerMarker.remove();
+            }, 3000);
           }
         },
         3000 * (i + 0.5),
       );
     }
   };
+
+  useEffect(() => {
+    if (isTimeUp) executeSelectedRoute();
+  }, [isTimeUp]);
 
   /**
    *
@@ -219,14 +230,15 @@ function GamePage(props) {
       .then((body) => {
         const text = body.event.text;
         const coinMod = body.event.coinModificator;
-        const gainText = coinMod > 0 ? ("You gained " + coinMod) : ("You lost " + -coinMod);
-        const coinText =  Math.abs(coinMod) === 1 ? " coin!" : " coins!";
+        const gainText =
+          coinMod > 0 ? "You gained " + coinMod : "You lost " + -coinMod;
+        const coinText = Math.abs(coinMod) === 1 ? " coin!" : " coins!";
         props.setCurrentToast({
           title: "Something happenend...",
           text: `${text} ${gainText} ${coinText}`,
           type: "Light",
         });
-        setCoins((coins) => coins+coinMod);
+        setCoins((coins) => coins + coinMod);
       })
       .catch((err) => {
         props.setCurrentToast({
@@ -238,18 +250,22 @@ function GamePage(props) {
   };
 
   const submitNewUserScore = () => {
-    if(user.highscore >= coins){
+    if (user.highscore >= coins) {
       return;
     }
     sendRequest(
       "/highscore",
       "POST",
       "submitting new user highscore",
-      {highscore: coins},
+      { highscore: coins },
       "JSON",
     )
       .then((body) => {
-        props.setUser({ id: user.id, username: user.username, highscore: body.newHighscore})
+        props.setUser({
+          id: user.id,
+          username: user.username,
+          highscore: body.newHighscore,
+        });
         return body.newHighscore;
       })
       .catch((err) => {
@@ -266,23 +282,28 @@ function GamePage(props) {
     setGameActive(false);
     setShowEndScreen(false);
     setCoins(20);
-    setSelectedStationPairs([])
+    setSelectedStationPairs([]);
     linePaths.opacity = 1;
   };
 
   const checkPathValidity = () => {
     //Check if end can be reached, by going in sequence from one station to another
+    const failMessage =
+      "Since you did not successfully reach your goal by train, you had to spent all your money on a taxi.";
     if (!selectedStationPairs || selectedStationPairs.length === 0) {
+      setEndText("You did not plan any route! " + failMessage);
       return false;
     }
     var lastStation = "initial";
-    const failMessage = "Since you did not successfully reach your goal by train, you had to spent all your money on a taxi.";
     for (var i = 0; i < selectedStationPairs.length; i++) {
       const station1 = selectedStationPairs[i].station_1;
       const station2 = selectedStationPairs[i].station_2;
       {
         if (i === 0 && station1 !== start && station2 !== start) {
-          setEndText("Your route did not start from the starting station! " + failMessage);
+          setEndText(
+            "Your route did not start from the starting station! " +
+              failMessage,
+          );
           return false; //Does not start from start
         }
         if (
@@ -290,20 +311,27 @@ function GamePage(props) {
           station1 !== end &&
           station2 !== end
         ) {
-          setEndText("Your route did not end at the end station! "+ failMessage);
+          setEndText(
+            "Your route did not end at the end station! " + failMessage,
+          );
           return false; // Does not end at end
         }
         if (
           i < selectedStationPairs.length - 1 &&
           (station1 === end || station2 === end)
         ) {
-          setEndText("Your route did not end at the end station! "+ failMessage);
+          setEndText(
+            "Your route did not end at the end station! " + failMessage,
+          );
           return false; // Route does not end with end
         }
 
         if (lastStation !== "initial") {
           if (lastStation !== station1 && lastStation !== station2) {
-            setEndText(`Neither ${station1} nor ${station2} are connected to ${lastStation}`+ failMessage);
+            setEndText(
+              `Neither ${station1} nor ${station2} are connected to ${lastStation}` +
+                failMessage,
+            );
             return false; //Segment not connected to the last segment
           } else {
             lastStation = station1 === lastStation ? station2 : station1;
@@ -316,12 +344,12 @@ function GamePage(props) {
     return true;
   };
 
-  //somewhere between 1 to 1200 for x and 10 and 500
   const drawNetwork = () => {
     if (stations && lines) {
       var stationPointsGroup = new Group();
       var linePathsGroup = new Group();
       for (var i = 0; i < stations.length; i++) {
+        //somewhere between 1 to 1200 for x and 10 and 500
         const circle = new Paper.Path.Circle(
           new Paper.Point(
             stations[i].position_x * 15 + 150,
@@ -390,13 +418,9 @@ function GamePage(props) {
       {
         //------------------Offcanvas for planning the game------------------------//
       }
-      <Offcanvas
-        show={isPlanning}
-        placement="end"
-        backdrop={false}
-      >
+      <Offcanvas show={isPlanning} placement="end" backdrop={false}>
         <Offcanvas.Body>
-          <>{`From: ${start} to ${end}`}</>
+          <b>{`From: ${start} to ${end}`}</b>
           {gameActive && stationPairs && (
             <ListGroup>
               {stationPairs.map((stationPair) => {
@@ -419,7 +443,7 @@ function GamePage(props) {
                     key={"LGI" + identifier}
                     active={index}
                     onClick={() => pathSelection(stationPair)}
-                    style={{userSelect:"none"}}
+                    style={{ userSelect: "none" }}
                   >
                     {index && (
                       <Badge bg="primary" pill>
@@ -443,9 +467,9 @@ function GamePage(props) {
         </Modal.Header>
         <Modal.Body>
           {endText}
-          <br/>
-          You finished your journey with {coins} coins in your pocket. Your Highscore
-          is now {user.highscore} coins.
+          <br />
+          You finished your journey with {coins} coins in your pocket. Your
+          Highscore is now {user.highscore} coins.
         </Modal.Body>
         <Modal.Footer>
           <Button
@@ -459,7 +483,7 @@ function GamePage(props) {
           <Button
             variant="secondary"
             onClick={() => {
-              navigate("/")
+              navigate("/");
               setShowEndScreen(false);
             }}
           >
@@ -470,25 +494,38 @@ function GamePage(props) {
       {
         //------------------Permanent Parts of the Page here------------------------//
       }
-       <div
+      <div
         style={{
           position: "absolute",
           marginLeft: "-150px",
           padding: "5px",
           fontSize: "40",
-          maxWidth: "300px"
+          maxWidth: "300px",
         }}
       >
-      <b>Your have: {coins}{"      "}</b>
-      <img src="/cash-coin.svg"
-            width="35"
-            height="35"
-            alt="Coin Icon"
-            style={{color: "green"}}
-            >
-      </img>
+        <b>
+          You have: {coins}
+          {"      "}
+        </b>
+        <img
+          src="/cash-coin.svg"
+          width="35"
+          height="35"
+          alt="Coin Icon"
+          style={{ color: "green" }}
+        ></img>
+        {gameActive && (
+          <div>
+            <div style={{color: "green"}}>
+              <b>Start station: {start} </b>
+            </div>
+            <div style={{color: "red"}}>
+              <b> End station: {end} </b>
+            </div>
+          </div>
+        )}
       </div>
-      <canvas ref={canvasRef} id="canvas" width={"1160px"} height={"568px"}/>
+      <canvas ref={canvasRef} id="canvas" width={"1160px"} height={"568px"} />
       <Container fluid="xs">
         <Row className="justify-content-md-center">
           {!gameActive &&
@@ -509,11 +546,14 @@ function GamePage(props) {
           {isPlanning && (
             <Button
               onClick={() => {
-                if(selectedStationPairs.length <= 0){
-                  props.setCurrentToast({title:"Info",text:"Make sure you have selected at least one pair of stations",type:"warning"})
-                }
-                else{
-                executeSelectedRoute();
+                if (selectedStationPairs.length <= 0) {
+                  props.setCurrentToast({
+                    title: "Info",
+                    text: "Make sure you have selected at least one pair of stations",
+                    type: "warning",
+                  });
+                } else {
+                  executeSelectedRoute();
                 }
               }}
             >
@@ -521,14 +561,19 @@ function GamePage(props) {
             </Button>
           )}
         </Row>
-        {gameActive && isPlanning &&
-        <Row className="justify-content-md-center" md="10">
-          {
-            //TODO:Fix bar not going to the end
-          }
-            <ProgressBar animated variant={currentTime/planningTime>0.2?"warning":"danger"} now={(currentTime/planningTime) * 100} style={{maxWidth:"500px"}}/>
-        </Row>
-        }
+        {gameActive && isPlanning && (
+          <Row className="justify-content-md-center" md="10">
+            {
+              //TODO:Fix bar not going to the end
+            }
+            <ProgressBar
+              animated
+              variant={currentTime / planningTime > 0.2 ? "warning" : "danger"}
+              now={(currentTime / planningTime) * 100}
+              style={{ maxWidth: "500px", padding: "0 0 0 0" }}
+            />
+          </Row>
+        )}
       </Container>
     </>
   );

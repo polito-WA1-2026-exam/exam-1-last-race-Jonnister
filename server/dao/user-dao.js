@@ -63,6 +63,31 @@ function UserDAO() {
     })
   };
 
+  /**
+   * Gets all users and their respective highscores.
+   */
+  this.getHighscores = () => {
+    return new Promise((resolve, reject) => {
+      db("users").all("SELECT username, highscore FROM users ORDER BY highscore DESC",
+        (err, rows) => {
+          if(err){
+            reject(err)
+          }
+          else if(rows === undefined ){
+            resolve({error: "No users found."})
+          }
+          else{
+            var highscores = [];
+            rows.forEach(row => 
+              highscores.push({user: row.username, highscore: row.highscore})
+            )
+            resolve(highscores)
+          }
+        }
+      )
+    })
+  };
+
 
 }
 

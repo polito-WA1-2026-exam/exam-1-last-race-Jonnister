@@ -67,7 +67,7 @@ function App() {
         fluid
         className="bg-body-primary"
         data-bs-theme="dark"
-         style={{ padding: "0 200px 0 200px" }}
+        style={{ padding: "0 200px 0 200px" }}
       >
         <Row>
           <Routes>
@@ -77,7 +77,7 @@ function App() {
               element={<LoginPage handleLogin={handleLogin} setCurrentToast={setCurrentToast} />}
             />
             <Route path="/play" element={<GamePage setCurrentToast={setCurrentToast} setUser={setUser}/> } />
-            <Route path="/leaderboard" element={<LeaderboardPage/>} />
+            <Route path="/leaderboard" element={<LeaderboardPage setCurrentToast={setCurrentToast}/>} />
             <Route
               path="*"
               element={

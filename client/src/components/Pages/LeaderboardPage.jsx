@@ -1,11 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Table } from "react-bootstrap";
+import sendRequest from "../../utility/Api";
 
-function LeaderboardPage() {
+function LeaderboardPage(props) {
 
-    const [userHighscores, setUserHighscores] = useState([{name:"Jonas",highscore:10},{name:"Kevin",highscore:10}]);
+    const [userHighscores, setUserHighscores] = useState([]);
 
-
+    useEffect(() => {
+        sendRequest("/highscores", "GET", "getting highscores", undefined, "JSON").then(
+            res => setUserHighscores(res.highscores)
+        ).catch((err) => {
+        props.setCurrentToast({
+          title: "Error",
+          text: `${err.message}`,
+          type: "danger",
+        });
+      });
+    }
+    ,[])
 
     return <>
     <h1>The greatest of all time...</h1>
@@ -18,10 +30,10 @@ function LeaderboardPage() {
         </tr>
       </thead>
       <tbody>
-        {userHighscores.map((element,i) =>{
+        {userHighscores && userHighscores.map((element,i) =>{
         return <tr key = {i}>
           <td>{i +1}</td>
-          <td>{element.name}</td>
+          <td>{element.user}</td>
           <td>{element.highscore}</td>
         </tr>
         })}

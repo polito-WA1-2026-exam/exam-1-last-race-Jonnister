@@ -177,7 +177,7 @@ app.get(`${prefix}/randstartdest`, isLoggedIn, async (req, res) => {
 
 //________Game_Ended________//
 /**
- * Sets the currently logged in users highscore.
+ * Sets the currently logged in user's highscore.
  */
 app.post(`${prefix}/highscore`, isLoggedIn, async (req, res) => {
   try {
@@ -188,7 +188,23 @@ app.post(`${prefix}/highscore`, isLoggedIn, async (req, res) => {
     if (result.error) {
       res.status(404).json(result);
     } else {
-      res.status(200).json({ "newHighscore": result });
+      res.status(200).json({ newHighscore: result });
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/**
+ * Gets all users and their highscores, sorted descending by highscore.
+ */
+app.get(`${prefix}/highscores`, isLoggedIn, async (req, res) => {
+  try {
+    const result = await userDao.getHighscores();
+    if (result.error) {
+      res.status(404).json(result);
+    } else {
+      res.status(200).json({highscores: result});
     }
   } catch (err) {
     res.status(500).json({ message: err.message });

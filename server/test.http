@@ -55,3 +55,6 @@ Content-Type: application/json
 {
     "highscore":"10"
 }
+
+### GET player highscores (successfully)
+GET {{PREFIX}}/highscores HTTP/1.1

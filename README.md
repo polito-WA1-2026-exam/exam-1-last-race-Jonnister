@@ -42,7 +42,8 @@
 
 - username, password (plus any other requested info)
 - username: DerKevin1, password: 123
-
+- username: FelixWa03, password: MEalxoi3301
+- username: xXKasulkeBoss2019Xx, password: 1dampfham!
 
 ## Use of AI Tools
 Briefly describe whether you used any AI tools (e.g., ChatGPT, GitHub Copilot, Claude) while working on this project, for which purposes (e.g., clarifying concepts, debugging, generating code), and how you verified or adapted their output.

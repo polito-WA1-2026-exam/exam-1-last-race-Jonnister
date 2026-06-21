@@ -13,6 +13,7 @@ import UserContext from "./utility/contexts/UserContext.js";
 import { useNavigate } from "react-router";
 import sendRequest from "./utility/Api.js";
 import InfoToast from "./components/InfoToast";
+import LeaderboardPage from "./components/Pages/LeaderboardPage.jsx";
 
 //Pages
 //Visitor Page/ Rules Explanation
@@ -48,16 +49,15 @@ function App() {
       setUser({
         id: content.id,
         username: content.username,
-        score: 0,
         highscore: content.highscore,
       }),
     ).catch(err => {
-      setCurrentToast({ title:"Warning", text:"Could not retrieve user from session, please login to play", type:"danger"})
+      setCurrentToast({ title:"Warning", text:"Could not retrieve user from session, please login to play", type:"warning"})
   });
   }, []);
 
   const handleLogin = (id, username, highscore) => {
-    setUser({ id: id, username: username, score: 0, highscore });
+    setUser({ id: id, username: username, highscore: highscore});
     navigate("/");
   };
   return (
@@ -76,8 +76,8 @@ function App() {
               path="/login"
               element={<LoginPage handleLogin={handleLogin} setCurrentToast={setCurrentToast} />}
             />
-            <Route path="/play" element={<GamePage setCurrentToast={setCurrentToast} /> } />
-            <Route path="/leaderboard" element={<>Here Leaderboard</>} />
+            <Route path="/play" element={<GamePage setCurrentToast={setCurrentToast} setUser={setUser}/> } />
+            <Route path="/leaderboard" element={<LeaderboardPage/>} />
             <Route
               path="*"
               element={

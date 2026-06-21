@@ -1,6 +1,4 @@
 //Default page: For visitors and rules explanation
-//
-
 import { useContext } from "react";
 import userContext from "../../utility/contexts/UserContext.js";
 import { Button} from "react-bootstrap";
@@ -37,11 +35,7 @@ function RulesPage() {
       screen. Once you are finished or the time runs out, the game will validate
       wether you planned a valid route (from start to end) and then you will
       travel from one station to another collecting or loosing coins on each
-      segment of your journey. So make sure you take the shortest route
-      possible!
-      {
-        //TODO: Maybe add screenshot of network map here;
-      }
+      segment of your journey. So make sure you to plan your route wisely!
     </>
   );
 }

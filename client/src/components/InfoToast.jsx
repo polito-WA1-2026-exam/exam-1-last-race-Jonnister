@@ -5,13 +5,24 @@ function InfoToast(props) {
   const [currentToasts, setCurrentToasts] = useState([]);
 
   useEffect(() => {
-    if (props.toast !== undefined) setCurrentToasts([...currentToasts, props.toast]);
+    if (props.toast !== undefined) {
+        setCurrentToasts([...currentToasts, props.toast]);
+    }
   }, [props.toast]);
   return (
     <ToastContainer position="bottom-center">
-      {currentToasts.map((toast,i) => {
-        return <ToastPreset key={i} title={toast.title} text={toast.text} type={toast.type} currentToasts={currentToasts} setCurrentToasts={setCurrentToasts}/>
-})}
+      {currentToasts.map((toast, i) => {
+        return (
+          <ToastPreset
+            key={i}
+            title={toast.title}
+            text={toast.text}
+            type={toast.type}
+            currentToasts={currentToasts}
+            setCurrentToasts={setCurrentToasts}
+          />
+        );
+      })}
     </ToastContainer>
   );
 }
@@ -21,14 +32,13 @@ export default InfoToast;
 export function ToastPreset(props) {
   const [title, setTitle] = useState(props.title);
   const [text, setText] = useState(props.text);
-  const [type, setType] = useState(props.type ? props.type : ""); //Warning/Danger
+  const [type, setType] = useState(props.type ? props.type : ""); //e.g. Warning/Danger
   const [show, setShow] = useState(true);
   return (
     <Toast
       bg={type}
       onClose={() => {
         setShow(false);
-        props.setCurrentToasts(props.currentToasts.filter((toast) => toast.text === text))
       }}
       show={show}
       autohide

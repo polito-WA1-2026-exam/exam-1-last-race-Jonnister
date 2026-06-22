@@ -24,7 +24,7 @@
   - request parameters: -
   - response body content: `[{line: x, station_pairs:[station_1: y, station_2: z, ...]}, ...]` The list of lines and the pairs of stations they serve.
 - GET `/api/stations`
-  - request parameters: -
+  - request parameters:  -
   - response body content: `[{name: abc, position_x: x, position_y: y, interchange: z}, ...]` the complete list of all stations in the database, with station names, positions (x,y) and whether they are interchange stations.
 - GET `/api/randstartdest`
   - request parameters: -

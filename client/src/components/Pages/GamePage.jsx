@@ -32,8 +32,8 @@ function GamePage(props) {
   const colors = [
     "red",
     "lime",
+    "gold",
     "DeepSkyBlue",
-    "yellow",
     "orange",
     "purple",
     "pink",
@@ -589,7 +589,7 @@ function GamePage(props) {
           <ListGroup as="ul" >
             {!isPlanning && lines &&
               linePaths &&
-              lines.map((line) => 
+              lines.sort((line1, line2) => (""+line1.line).localeCompare(""+line2.line)).map((line) => 
               { 
                 return <ListGroup.Item as="li" style=
                   {{

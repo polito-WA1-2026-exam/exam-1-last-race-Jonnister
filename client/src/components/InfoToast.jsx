@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { ToastContainer, Toast } from "react-bootstrap";
 
+/**
+ * Component for displaying toasts with some information on e.g. errors or events on the bottom of the screen
+ */
 function InfoToast(props) {
   const [currentToasts, setCurrentToasts] = useState([]);
 
@@ -19,7 +22,6 @@ function InfoToast(props) {
             text={toast.text}
             type={toast.type}
             currentToasts={currentToasts}
-            setCurrentToasts={setCurrentToasts}
           />
         );
       })}
@@ -29,6 +31,11 @@ function InfoToast(props) {
 
 export default InfoToast;
 
+/**
+ * The toast preset used by InfoToast for displaying information.
+ * @param {*} props title, text and type of the toast.
+ * @returns A toast with the details specified from the props.
+ */
 export function ToastPreset(props) {
   const [title, setTitle] = useState(props.title);
   const [text, setText] = useState(props.text);

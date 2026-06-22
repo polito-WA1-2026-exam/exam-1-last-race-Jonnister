@@ -1,11 +1,18 @@
-//Login Page (Shows Username, Password form, Login Button)
 import { useState } from "react";
 import { FormGroup, Form, Button, Container } from "react-bootstrap";
 import sendRequest from "../../utility/Api";
+/**
+ * Login Page (Shows Username, Password form, Login Button)
+ */
 function LoginPage(props) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
+  /** Logs in the user, if password and username have been correctly entered. 
+   * 
+   * @param {*} username the user's username (string)
+   * @param {*} password the user's username (string)
+   */
   const LoginUser = (username, password) => {
     try{
     if (username.trim() === "" ||password.trim() === "") {

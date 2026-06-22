@@ -1,9 +1,9 @@
-//Default page: For visitors and rules explanation
 import { useContext } from "react";
 import userContext from "../../utility/contexts/Usercontext.js";
 import { Button } from "react-bootstrap";
 import { useNavigate } from "react-router";
 
+/**Default page for all users and rules explanation; Only page visitors can access*/
 function RulesPage() {
   const user = useContext(userContext);
   const navigate = useNavigate();

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Table } from "react-bootstrap";
 import sendRequest from "../../utility/Api";
-
+/**Page displaying all users highscores in a table */
 function LeaderboardPage(props) {
   const [userHighscores, setUserHighscores] = useState([]);
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import heroImg from "./assets/hero.png";
 import "./App.css";
 import { redirect, Route, Routes } from "react-router";
-import { Container, Button, Row} from "react-bootstrap";
+import { Container, Button, Row } from "react-bootstrap";
 import NavigationBar from "./components/NavigationBar";
 import LoginPage from "./components/Pages/LoginPage";
 import GamePage from "./components/Pages/GamePage";
@@ -14,19 +14,6 @@ import { useNavigate } from "react-router";
 import sendRequest from "./utility/Api.js";
 import InfoToast from "./components/InfoToast";
 import LeaderboardPage from "./components/Pages/LeaderboardPage.jsx";
-
-//Pages
-//Visitor Page/ Rules Explanation
-//Main Page (Shows Game Screen -> first network, then remove network links only stations)
-//Login Page (Shows Username, Password form, Login Button)
-//LeaderBoard
-
-//Components
-// Header, with Title and Login for the User
-// PopUp Component
-// List of Stations collapsible on the right hand side, submit button on the bottom
-// Toasts for coin Events or PopUps?
-// From/To Box in the Top left corner
 
 function App() {
   const [user, setUser] = useState({
@@ -38,6 +25,7 @@ function App() {
   const navigate = useNavigate();
   const [currentToast, setCurrentToast] = useState();
 
+  //Retrieve user from session storage
   useEffect(() => {
     sendRequest(
       "/sessions/current",
@@ -45,19 +33,25 @@ function App() {
       "getting user from session",
       undefined,
       "JSON",
-    ).then((content) =>
-      setUser({
-        id: content.id,
-        username: content.username,
-        highscore: content.highscore,
-      }),
-    ).catch(err => {
-      setCurrentToast({ title:"Warning", text:"Could not retrieve user from session, please login to play", type:"warning"})
-  });
+    )
+      .then((content) =>
+        setUser({
+          id: content.id,
+          username: content.username,
+          highscore: content.highscore,
+        }),
+      )
+      .catch((err) => {
+        setCurrentToast({
+          title: "Warning",
+          text: "Could not retrieve user from session, please login to play",
+          type: "warning",
+        });
+      });
   }, []);
 
   const handleLogin = (id, username, highscore) => {
-    setUser({ id: id, username: username, highscore: highscore});
+    setUser({ id: id, username: username, highscore: highscore });
     navigate("/");
   };
   return (
@@ -74,10 +68,23 @@ function App() {
             <Route index element={<RulesPage />}></Route>
             <Route
               path="/login"
-              element={<LoginPage handleLogin={handleLogin} setCurrentToast={setCurrentToast} />}
+              element={
+                <LoginPage
+                  handleLogin={handleLogin}
+                  setCurrentToast={setCurrentToast}
+                />
+              }
             />
-            <Route path="/play" element={<GamePage setCurrentToast={setCurrentToast} setUser={setUser}/> } />
-            <Route path="/leaderboard" element={<LeaderboardPage setCurrentToast={setCurrentToast}/>} />
+            <Route
+              path="/play"
+              element={
+                <GamePage setCurrentToast={setCurrentToast} setUser={setUser} />
+              }
+            />
+            <Route
+              path="/leaderboard"
+              element={<LeaderboardPage setCurrentToast={setCurrentToast} />}
+            />
             <Route
               path="*"
               element={

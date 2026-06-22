@@ -7,6 +7,10 @@ import { useNavigate } from "react-router";
 function NavigationBar(props) {
   const navigate = useNavigate();
   const user = useContext(userContext);
+
+  /**
+   * Deletes user from session.
+   */
   const LogoutUser = () => {
     sendRequest("/sessions/current", "DELETE", "logging out user").then(() => {
       props.setUser({

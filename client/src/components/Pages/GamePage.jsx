@@ -1,6 +1,6 @@
 //Main Page (Shows Game Screen -> first network, then remove network links only stations)
 import { useContext, useEffect, useState, useRef } from "react";
-import userContext from "../../utility/contexts/UserContext";
+import userContext from "../../utility/contexts/Usercontext";
 import { useNavigate } from "react-router";
 import Paper, { PointText, Group } from "paper";
 import sendRequest from "../../utility/Api";
@@ -57,7 +57,7 @@ function GamePage(props) {
   const [isPlanning, setIsPlanning] = useState(false);
   const [showEndScreen, setShowEndScreen] = useState(false);
 
-  //Redirect unauthorized user
+  //Redirect unauthorized user; Get network
   useEffect(() => {
     if (!user.id) {
       navigate("/");
@@ -204,23 +204,31 @@ function GamePage(props) {
         () => {
           playerMarker.position = stationPoints.children[station].position;
           const event = getRandomEvent();
-          if (station === end) {
-            setEndText("You successfully reached the endstation!");
-            setTimeout(() => {
-              submitNewUserScore();
-              setShowEndScreen(true);
-              playerMarker.remove();
-            }, 3000);
-          }
         },
         3000 * (i + 0.5),
       );
+      if (station === end) {
+        setEndText("You successfully reached the endstation!");
+        setTimeout(
+          () => {
+            setShowEndScreen(true);
+            playerMarker.remove();
+          },
+          3000 * (i + 1.5),
+        );
+      }
     }
   };
 
   useEffect(() => {
     if (isTimeUp) executeSelectedRoute();
   }, [isTimeUp]);
+
+  useEffect(() => {
+    if (showEndScreen) {
+      submitNewUserScore();
+    }
+  }, [showEndScreen]);
 
   /**
    *
@@ -238,7 +246,7 @@ function GamePage(props) {
           text: `${text} ${gainText} ${coinText}`,
           type: "Light",
         });
-        setCoins((coins) => coins + coinMod);
+        setCoins((coins) => (coins + coinMod < 0 ? 0 : coins + coinMod));
       })
       .catch((err) => {
         props.setCurrentToast({
@@ -249,8 +257,11 @@ function GamePage(props) {
       });
   };
 
-  const submitNewUserScore = () => {
+  const submitNewUserScore = (coinCB) => {
     if (user.highscore >= coins) {
+      return;
+    }
+    if (coins === 20) {
       return;
     }
     sendRequest(
@@ -281,9 +292,9 @@ function GamePage(props) {
     startEndGroup.remove();
     setGameActive(false);
     setShowEndScreen(false);
-    setCoins(20);
     setSelectedStationPairs([]);
     linePaths.opacity = 1;
+    setCoins(20);
   };
 
   const checkPathValidity = () => {
@@ -295,50 +306,64 @@ function GamePage(props) {
       return false;
     }
     var lastStation = "initial";
+    var lastLine = "initial"
     for (var i = 0; i < selectedStationPairs.length; i++) {
       const station1 = selectedStationPairs[i].station_1;
-      const station2 = selectedStationPairs[i].station_2;
-      {
-        if (i === 0 && station1 !== start && station2 !== start) {
+      const station2 = selectedStationPairs[i].station_2; 
+    
+    var line = undefined;
+    for ( var j= 0; j < lines.length; j++){
+     line = lines[j].station_pairs.includes(selectedStationPairs[i]) ? lines[j].line : undefined;
+     if(line){
+      break;
+     }
+    }
+    if(lastLine === "initial"){
+      lastLine = line;
+    }
+    else if(lastLine !== line && !(stations.find((station) =>station1 === station.name).interchange || stations.find((station) =>station2 === station.name).interchange)){
+      setEndText(
+          "You tried to change the line at a non interchange station! " + failMessage,
+        );
+        return false;
+    }
+    else{
+      lastLine = line;
+    }
+      if (i === 0 && station1 !== start && station2 !== start) {
+        setEndText(
+          "Your route did not start from the starting station! " + failMessage,
+        );
+        return false; //Does not start from start
+      }
+      if (
+        i === selectedStationPairs.length - 1 &&
+        station1 !== end &&
+        station2 !== end
+      ) {
+        setEndText("Your route did not end at the end station! " + failMessage);
+        return false; // Does not end at end
+      }
+      if (
+        i < selectedStationPairs.length - 1 &&
+        (station1 === end || station2 === end)
+      ) {
+        setEndText("Your route did not end at the end station! " + failMessage);
+        return false; // Route does not end with end
+      }
+
+      if (lastStation !== "initial") {
+        if (lastStation !== station1 && lastStation !== station2) {
           setEndText(
-            "Your route did not start from the starting station! " +
+            `Neither ${station1} nor ${station2} are connected to ${lastStation}. ` +
               failMessage,
           );
-          return false; //Does not start from start
-        }
-        if (
-          i === selectedStationPairs.length - 1 &&
-          station1 !== end &&
-          station2 !== end
-        ) {
-          setEndText(
-            "Your route did not end at the end station! " + failMessage,
-          );
-          return false; // Does not end at end
-        }
-        if (
-          i < selectedStationPairs.length - 1 &&
-          (station1 === end || station2 === end)
-        ) {
-          setEndText(
-            "Your route did not end at the end station! " + failMessage,
-          );
-          return false; // Route does not end with end
-        }
-
-        if (lastStation !== "initial") {
-          if (lastStation !== station1 && lastStation !== station2) {
-            setEndText(
-              `Neither ${station1} nor ${station2} are connected to ${lastStation}` +
-                failMessage,
-            );
-            return false; //Segment not connected to the last segment
-          } else {
-            lastStation = station1 === lastStation ? station2 : station1;
-          }
+          return false; //Segment not connected to the last segment
         } else {
-          lastStation = station1 === start ? station2 : station1;
+          lastStation = station1 === lastStation ? station2 : station1;
         }
+      } else {
+        lastStation = station1 === start ? station2 : station1;
       }
     }
     return true;
@@ -373,19 +398,24 @@ function GamePage(props) {
           font: "Arial",
           fontWeight: "bold",
         });
+        //Adds visual identifrier to interchange stations, makes game easier
+        /**if (stations[i].interchange === 1) {
+          const circleText = new PointText({
+            point: new Paper.Point(circle.position.x, circle.position.y + 5),
+            content: `IC`,
+            justification: "center",
+            color: "black",
+            size: "100px",
+            font: "Arial",
+            fontWeight: "bold",
+          });
+        }*/
         stationPointsGroup.addChild(circle);
       }
       for (var i = 0; i < lines.length; i++) {
-        //Theoretically i could add all station-to-stations to one long path, but that might be impractical since i might still need the segments
         for (var j = 0; j < lines[i].station_pairs.length; j++) {
           const station1 = lines[i].station_pairs[j].station_1;
           const station2 = lines[i].station_pairs[j].station_2;
-          //  const outerPath = new Paper.Path(
-          //    stationPointsGroup.children[station1].position,
-          //    stationPointsGroup.children[station2].position,
-          //  );
-          //outerPath.strokeColor = "grey";
-          //outerPath.strokeWidth = 8;
           const path = new Paper.Path(
             stationPointsGroup.children[`${station1}`].position,
             stationPointsGroup.children[`${station2}`].position,
@@ -393,7 +423,6 @@ function GamePage(props) {
           path.strokeColor = colors[i % colors.length];
           path.strokeWidth = 7;
           path.name = `${lines[i].line} from ${station1} to ${station2}`;
-          // linePathsGroup.addChild(outerPath);
           linePathsGroup.addChild(path);
         }
       }
@@ -422,7 +451,7 @@ function GamePage(props) {
         <Offcanvas.Body>
           <b>{`From: ${start} to ${end}`}</b>
           {gameActive && stationPairs && (
-            <ListGroup>
+            <ListGroup as="ul" style={{marginTop: "1vh"}}>
               {stationPairs.map((stationPair) => {
                 const identifier =
                   stationPair.station_1 + "-" + stationPair.station_2;
@@ -443,10 +472,12 @@ function GamePage(props) {
                     key={"LGI" + identifier}
                     active={index}
                     onClick={() => pathSelection(stationPair)}
+                    as="li"
+                    variant="info"
                     style={{ userSelect: "none" }}
                   >
                     {index && (
-                      <Badge bg="primary" pill>
+                      <Badge bg="primary" style={{marginRight: "1vw"}}>
                         {index}
                       </Badge>
                     )}
@@ -516,16 +547,33 @@ function GamePage(props) {
         ></img>
         {gameActive && (
           <div>
-            <div style={{color: "green"}}>
+            <div style={{ color: "green" }}>
               <b>Start station: {start} </b>
             </div>
-            <div style={{color: "red"}}>
+            <div style={{ color: "red" }}>
               <b> End station: {end} </b>
             </div>
           </div>
         )}
+          <ListGroup as="ul" >
+            {!isPlanning && lines &&
+              linePaths &&
+              lines.map((line) => 
+              { 
+                return <ListGroup.Item as="li" style=
+                  {{
+                    color: colors[lines.indexOf(line)],
+                    width: "7vw",
+                  }}
+                  variant="light"
+                  data-bs-theme="light"
+                  > 
+                  <b>Line {line.line}</b>
+                </ListGroup.Item>;}
+              )}
+          </ListGroup>
       </div>
-      <canvas ref={canvasRef} id="canvas" width={"1160px"} height={"568px"} />
+      <canvas ref={canvasRef} id="canvas" width={"1160px"} height={"568px"} style={{alignContent:"center", alignItems:"center", alignSelf:"center"}} />
       <Container fluid="xs">
         <Row className="justify-content-md-center">
           {!gameActive &&
@@ -563,14 +611,11 @@ function GamePage(props) {
         </Row>
         {gameActive && isPlanning && (
           <Row className="justify-content-md-center" md="10">
-            {
-              //TODO:Fix bar not going to the end
-            }
             <ProgressBar
               animated
               variant={currentTime / planningTime > 0.2 ? "warning" : "danger"}
               now={(currentTime / planningTime) * 100}
-              style={{ maxWidth: "500px", padding: "0 0 0 0" }}
+              style={{ maxWidth: "40vw", padding: "0 0 0 0" }}
             />
           </Row>
         )}

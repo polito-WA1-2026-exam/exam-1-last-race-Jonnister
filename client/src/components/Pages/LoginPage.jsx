@@ -51,11 +51,9 @@ function LoginPage(props) {
             type="password"
           />
         </FormGroup>
-        {
-          //TODO: Add some space here between button and form; Make prettier in general
-        }
         <Button
           className="btn btn-default"
+          style={{marginTop:"1vh"}}
           onClick={() => {
             LoginUser(username, password);
           }}

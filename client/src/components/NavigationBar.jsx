@@ -1,5 +1,5 @@
 import { Container, Navbar, Nav, Button } from "react-bootstrap";
-import userContext from "../utility/contexts/UserContext.js";
+import userContext from "../utility/contexts/Usercontext.js";
 import { useContext } from "react";
 import sendRequest from "../utility/Api.js";
 import { useNavigate } from "react-router";
@@ -24,7 +24,7 @@ function NavigationBar(props) {
       sticky="top"
       className="bg-body-tertiary"
       data-bs-theme="dark"
-      style={{ padding: "10px 4px 10px 4px"}}
+      style={{ padding: "1vh 1vw 1vh 1vw"}}
     >
       <Navbar.Brand>
         <Nav.Link onClick={() => navigate("/")}>
@@ -50,7 +50,7 @@ function NavigationBar(props) {
           )}
         </Nav>
       </Navbar.Collapse>
-      {user.id && <Navbar.Text>{user.username}</Navbar.Text>}
+      {user.id && <Navbar.Text style={{marginRight:"1vw"}}>{user.username}</Navbar.Text>}
       {user.id ? (
         <Button className="btn btn-alarm" onClick={() => LogoutUser()}>
           Logout

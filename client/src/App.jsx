@@ -9,7 +9,7 @@ import NavigationBar from "./components/NavigationBar";
 import LoginPage from "./components/Pages/LoginPage";
 import GamePage from "./components/Pages/GamePage";
 import RulesPage from "./components/Pages/RulesPage";
-import UserContext from "./utility/contexts/UserContext.js";
+import UserContext from "./utility/contexts/Usercontext.js";
 import { useNavigate } from "react-router";
 import sendRequest from "./utility/Api.js";
 import InfoToast from "./components/InfoToast";
